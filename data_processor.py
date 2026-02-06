@@ -1,4 +1,5 @@
 def data_conversion(data):
+    
     year_col=list(filter(lambda y: y.isdigit(), data[0].keys()))
     
     return[
