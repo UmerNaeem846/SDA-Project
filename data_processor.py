@@ -6,7 +6,7 @@ def data_conversion(data):
             "Country":row["Country Name"],
             "Region":row["Continent"],
             "Year":int(year),
-            "Values": float(row[year])
+            "Value": float(row[year])
             if row[year]
             else None
         }
