@@ -1,6 +1,6 @@
 {
-  "region": "Europe",
-  "year": 2020,
-  "operation": "average",
+  "region": "Asia",
+  "year": 2013,
+  "operation": "sum",
   "output": "dashboard"
 }

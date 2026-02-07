@@ -28,11 +28,14 @@ def load_config(path):
 
 def validate_config(config):
 
-    #Validate required fields in the configuration.
-    required_fields = ["region", "year", "operation", "output"]
+    required_fields = ["year", "operation", "output"]
     for field in required_fields:
         if field not in config:
             raise Exception(f"Missing configuration field: {field}")
+
+    # at least one: region OR country
+    if not config.get("region") and not config.get("country"):
+        raise Exception("Provide at least one: 'region' or 'country'")
 
     if config["operation"] not in ["average", "sum"]:
         raise Exception("Operation must be 'average' or 'sum'")
@@ -51,7 +54,7 @@ def main():
     validate_config(config)
 
     #Load raw CSV/Excel data
-    raw_data = gdb_data("data/gdp_with_continent_filled.xlsx") #To be checked again...Take a look at it
+    raw_data = gdb_data("data/gdp_with_continent_filled.csv") 
 
     #Convert to standard format
     converted_data = data_conversion(raw_data)
@@ -59,11 +62,15 @@ def main():
     #Clean data (remove rows with missing GDP)
     cleaned_data = clean_data(converted_data)
 
-    #Apply filters
-    filtered_data = region_filter(cleaned_data, config["region"])
-    filtered_data = year_filter(filtered_data, config["year"])
     if "country" in config:
-        filtered_data = country_filter(filtered_data, config["country"])
+        filtered_data = country_filter(cleaned_data, config["country"])
+    else:
+        filtered_data = region_filter(cleaned_data, config["region"])
+
+    #Apply filters
+    filtered_data = year_filter(filtered_data, config["year"])
+    
+
 
     if not filtered_data:
         raise Exception("No data found for the selected configuration")
