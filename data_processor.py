@@ -7,7 +7,7 @@ def data_conversion(data):
             "Country":row["Country Name"],
             "Region":row["Continent"],
             "Year":int(year),
-            "Values": float(row[year])
+            "Value": float(row[year])
             if row[year]
             else None
         }
@@ -20,11 +20,11 @@ def data_conversion(data):
 def clean_data(data):
     return list(filter(lambda col: col["Value"] is not None, data))
 
-def region_filter(data, regions):
-    return list(filter(lambda col:col["Region"] in regions,data ))
+def region_filter(data, region):
+    return list(filter(lambda col:col["Region"]==region,data ))
 
 def year_filter(data, year):
     return list(filter(lambda col:col["Year"]==year,data ))
 
-def country_filter(data, countries):
-    return list(filter(lambda col:col["Country"] in countries,data ))
+def country_filter(data, country):
+    return list(filter(lambda col:col["Country"]==country,data ))
