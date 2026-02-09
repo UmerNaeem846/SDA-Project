@@ -20,11 +20,11 @@ def data_conversion(data):
 def clean_data(data):
     return list(filter(lambda col: col["Value"] is not None, data))
 
-def region_filter(data, region):
-    return list(filter(lambda col:col["Region"]==region,data ))
+def region_filter(data, regions):
+    return list(filter(lambda col:col["Region"] in regions,data ))
 
 def year_filter(data, year):
     return list(filter(lambda col:col["Year"]==year,data ))
 
-def country_filter(data, country):
-    return list(filter(lambda col:col["Country"]==country,data ))
+def country_filter(data, countries):
+    return list(filter(lambda col:col["Country"] in countries,data ))
