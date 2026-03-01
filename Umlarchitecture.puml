@@ -1,0 +1,87 @@
+@startuml
+
+skinparam packageStyle rectangle
+skinparam linetype ortho
+
+title GDP Modular Architecture - Phase 2 (DIP Applied)
+
+package "Main Module\n(Orchestrator)" {
+    class Main {
+        +bootstrap()
+    }
+}
+
+package "Core Module\n(Domain Layer)" {
+
+    interface DataSink {
+        +write(records: List[dict])
+    }
+
+    interface PipelineService {
+        +execute(raw_data: List[Any])
+    }
+
+    class TransformationEngine {
+        -sink: DataSink
+        -continent: str
+        -start_year: int
+        -end_year: int
+        -decline_years: int
+        +execute(raw_data)
+        -normalize_data(raw_data)
+    }
+
+    class Analytics {
+        +filter_by_continent()
+        +filter_by_year_range()
+        +top_n_by_gdp()
+        +bottom_n_by_gdp()
+        +average_gdp_by_continent()
+        +total_global_trend()
+        +countries_with_decline()
+    }
+
+    TransformationEngine ..> Analytics : uses
+    TransformationEngine --> DataSink : depends on
+    TransformationEngine ..|> PipelineService
+}
+
+package "Input Module\n(Source Layer)" {
+
+    class CsvReader {
+        -file_path: str
+        -service: PipelineService
+        +run()
+    }
+
+    class JsonReader {
+        -file_path: str
+        -service: PipelineService
+        +run()
+    }
+
+    CsvReader --> PipelineService
+    JsonReader --> PipelineService
+}
+
+package "Output Module\n(Sink Layer)" {
+
+    class ConsoleWriter {
+        +write(records)
+    }
+
+    class GraphicsChartWriter {
+        +write(records)
+    }
+
+    ConsoleWriter ..|> DataSink
+    GraphicsChartWriter ..|> DataSink
+}
+
+Main --> TransformationEngine : injects
+Main --> CsvReader : creates
+Main --> JsonReader : creates
+Main --> ConsoleWriter : creates
+Main --> GraphicsChartWriter : creates
+
+@enduml
