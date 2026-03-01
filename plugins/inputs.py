@@ -15,7 +15,7 @@ class CsvReader:
             raise FileNotFoundError(f"CSV file not found: {self.file_path}")
 
         try:
-            with open(self.file_path, newline='', encoding="utf-8") as f:
+            with open(self.file_path, newline='', encoding="utf-8-sig") as f:
                 reader = csv.DictReader(f)
                 data = list(reader)
 
@@ -39,7 +39,7 @@ class JsonReader:
             raise FileNotFoundError(f"JSON file not found: {self.file_path}")
 
         try:
-            with open(self.file_path, encoding="utf-8") as f:
+            with open(self.file_path, encoding="utf-8-sig") as f:
                 data = json.load(f)
 
             if not data:

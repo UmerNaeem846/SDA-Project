@@ -24,64 +24,117 @@ class TransformationEngine:
     # Pure Normalization (No loops)
     def normalize_data(self, raw_data: List[Any]) -> List[Dict]:
 
-        def transform(row):
-            try:
-                return {
-                    "country": row["Country Name"],
-                    "continent": row["Continent"],
-                    "year": int(row["Year"]),
-                    "gdp": float(row["Value"])
-                }
-            except (KeyError, ValueError):
-                return None
+        def extract_year_records(row):
 
-        return list(
-            filter(
-                lambda r: r is not None and analytics.validate_record(r),
-                map(transform, raw_data)
+            # Get only year columns (numbers)
+            year_columns = list(
+                filter(lambda key: key.isdigit(), row.keys())
             )
-        )
+
+            return list(
+                map(
+                    lambda year: {
+                        "country": row["Country Name"],
+                        "continent": row["Continent"],
+                        "year": int(year),
+                        "gdp": float(row[year]) if row[year] else 0.0
+                    },
+                    year_columns
+                )
+            )
+
+        # Map each row → list of year records
+        mapped = list(map(extract_year_records, raw_data))
+
+        # Flatten list of lists
+        return [record for sublist in mapped for record in sublist]      
 
     
     # Execute Pipeline
     def execute(self, raw_data: List[Any]) -> None:
+        try:
 
-        data = self.normalize_data(raw_data)
+            data = self.normalize_data(raw_data)
 
-        continent_data = analytics.filter_by_continent(
-            data, self.continent
-        )
+            if not data:
+                raise ValueError("No valid data after normalization.")
 
-        ranged_data = analytics.filter_by_year_range(
-            continent_data,
-            self.start_year,
-            self.end_year
-        )
+            continent_data = analytics.filter_by_continent(
+                data, self.continent
+            )
 
-        results = list(filter(None, [
-            {
-                "Top 10 Countries":
-                analytics.top_n_by_gdp(ranged_data)
-            },
-            {
-                "Bottom 10 Countries":
-                analytics.bottom_n_by_gdp(ranged_data)
-            },
-            {
-                "Average GDP by Continent":
-                analytics.average_gdp_by_continent(data)
-            },
-            {
-                "Global GDP Trend":
-                analytics.total_global_trend(data)
-            },
-            {
-                "Countries with Consistent Decline":
-                analytics.countries_with_decline(
-                    continent_data,
-                    self.decline_years
-                )
-            }
-        ]))
+            ranged_data = analytics.filter_by_year_range(
+                continent_data,
+                self.start_year,
+                self.end_year
+            )
 
-        self.sink.write(results)
+            if not ranged_data:
+                raise ValueError("No data found for given continent and year range.")
+
+
+            results = [
+
+                {
+                    "Top 10 Countries by GDP":
+                    analytics.top_n_by_gdp(ranged_data)
+                },
+
+                {
+                    "Bottom 10 Countries by GDP":
+                    analytics.bottom_n_by_gdp(ranged_data)
+                },
+
+                {
+                    "GDP Growth Rate of Each Country":
+                    analytics.growth_rate_by_country(ranged_data)
+                },
+
+                {
+                    "Average GDP by Continent (Range)":
+                    analytics.average_gdp_by_continent_range(ranged_data)
+                },
+
+                {
+                    "Total Global GDP Trend":
+                    analytics.total_global_trend(ranged_data)
+                },
+
+                {
+                    "Fastest Growing Continent":
+                    analytics.fastest_growing_continent(
+                        analytics.filter_by_year_range(
+                            data,
+                            self.start_year,
+                            self.end_year
+                        )
+                    )
+                },
+
+                {
+                    "Countries with Consistent GDP Decline":
+                    analytics.countries_with_decline(
+                        continent_data,
+                        self.decline_years
+                    )
+                },
+
+                {
+                    "Contribution of Each Continent to Global GDP":
+                    analytics.continent_contribution(
+                        analytics.filter_by_year_range(
+                            data,
+                            self.start_year,
+                            self.end_year
+                        )
+                    )
+                }
+
+            ]
+
+            # Step 5: Send to Sink
+            self.sink.write(results)
+
+        except Exception as e:
+            print(f"[FATAL ERROR] {e}")
+            raise
