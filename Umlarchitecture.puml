@@ -36,9 +36,12 @@ package "Core Module\n(Domain Layer)" {
         +filter_by_year_range()
         +top_n_by_gdp()
         +bottom_n_by_gdp()
-        +average_gdp_by_continent()
+        +growth_rate_by_country()
+        +average_gdp_by_continent_range()
         +total_global_trend()
+        +fastest_growing_continent()
         +countries_with_decline()
+        +continent_contribution()
     }
 
     TransformationEngine ..> Analytics : uses
