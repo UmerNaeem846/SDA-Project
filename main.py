@@ -55,11 +55,9 @@ def bootstrap():
         if config["output_type"] not in OUTPUT_DRIVERS:
             raise ValueError("Unsupported output type")
 
-        # 1️⃣ Instantiate Output
         sink_class = OUTPUT_DRIVERS[config["output_type"]]
         sink = sink_class()
 
-        # 2️⃣ Instantiate Core Engine (Dependency Injection)
         engine = TransformationEngine(
             sink=sink,
             continent=config["continent"],
@@ -68,11 +66,9 @@ def bootstrap():
             decline_years=int(config["decline_years"])
         )
 
-        # 3️⃣ Instantiate Input (Inject Core)
         input_class = INPUT_DRIVERS[config["input_type"]]
         reader = input_class(config["file_path"], engine)
 
-        # 4️⃣ Run system
         reader.run()
 
     except Exception as e:
