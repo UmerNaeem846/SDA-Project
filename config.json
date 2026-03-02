@@ -1,6 +1,6 @@
 {
   "input_type": "json",
-  "output_type": "chart",
+  "output_type": "console",
   "file_path": "data/gdp_with_continent_filled.json",
   "continent": "Asia",
   "start_year": 2010,

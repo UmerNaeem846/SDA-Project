@@ -24,11 +24,13 @@ def filter_by_year_range(data: List[Dict], start: int, end: int) -> List[Dict]:
 # TOP GDP
 
 def top_n_by_gdp(data: List[Dict], n: int = 10) -> List[Dict]:
-    return sorted(data, key=itemgetter("gdp"), reverse=True)[:n]
+    return list(sorted(data, key=itemgetter("gdp"), reverse=True))[:n]
 
-#BOTTOM GDP
+
+# BOTTOM GDP
+
 def bottom_n_by_gdp(data: List[Dict], n: int = 10) -> List[Dict]:
-    return sorted(data, key=itemgetter("gdp"))[:n]
+    return list(sorted(data, key=itemgetter("gdp")))[:n]
 
 
 # GDP GROWTH RATE PER COUNTRY
@@ -48,10 +50,12 @@ def growth_rate_by_country(data: List[Dict]) -> Dict[str, float]:
 
         return 0.0 if start == 0 else ((end - start) / start) * 100
 
-    return {
-        country: compute_growth(group)
-        for country, group in grouped
-    }
+    return dict(
+        map(
+            lambda item: (item[0], compute_growth(item[1])),
+            grouped
+        )
+    )
 
 
 # AVERAGE GDP BY CONTINENT (FOR GIVEN RANGE)
@@ -61,12 +65,17 @@ def average_gdp_by_continent_range(data: List[Dict]) -> Dict[str, float]:
     sorted_data = sorted(data, key=itemgetter("continent"))
     grouped = groupby(sorted_data, key=itemgetter("continent"))
 
-    return {
-        continent: (
-            lambda values: sum(values) / len(values)
-        )(list(map(itemgetter("gdp"), group)))
-        for continent, group in grouped
-    }
+    def compute_average(records):
+        records = list(records)
+        total = reduce(lambda acc, d: acc + d["gdp"], records, 0)
+        return total / len(records) if records else 0
+
+    return dict(
+        map(
+            lambda item: (item[0], compute_average(item[1])),
+            grouped
+        )
+    )
 
 
 # TOTAL GLOBAL GDP TREND (YEARLY)
@@ -76,10 +85,15 @@ def total_global_trend(data: List[Dict]) -> Dict[int, float]:
     sorted_data = sorted(data, key=itemgetter("year"))
     grouped = groupby(sorted_data, key=itemgetter("year"))
 
-    return {
-        year: sum(map(itemgetter("gdp"), group))
-        for year, group in grouped
-    }
+    return dict(
+        map(
+            lambda item: (
+                item[0],
+                reduce(lambda acc, d: acc + d["gdp"], item[1], 0)
+            ),
+            grouped
+        )
+    )
 
 
 # FASTEST GROWING CONTINENT
@@ -99,10 +113,12 @@ def fastest_growing_continent(data: List[Dict]) -> str:
 
         return 0.0 if start == 0 else ((end - start) / start) * 100
 
-    growth_map = {
-        continent: compute_growth(group)
-        for continent, group in grouped
-    }
+    growth_map = dict(
+        map(
+            lambda item: (item[0], compute_growth(item[1])),
+            grouped
+        )
+    )
 
     if not growth_map:
         return "No Data"
@@ -126,15 +142,13 @@ def countries_with_decline(data: List[Dict], years: int) -> List[str]:
         last_years = records[-years:]
         gdps = list(map(itemgetter("gdp"), last_years))
 
-        return all(
-            map(lambda pair: pair[0] > pair[1], zip(gdps, gdps[1:]))
-        )
+        return all(map(lambda p: p[0] > p[1], zip(gdps, gdps[1:])))
 
     return list(
         map(
             lambda item: item[0],
             filter(
-                lambda item: is_declining(list(item[1])),
+                lambda item: is_declining(item[1]),
                 grouped
             )
         )
@@ -145,7 +159,7 @@ def countries_with_decline(data: List[Dict], years: int) -> List[str]:
 
 def continent_contribution(data: List[Dict]) -> Dict[str, float]:
 
-    total_global = sum(map(itemgetter("gdp"), data))
+    total_global = reduce(lambda acc, d: acc + d["gdp"], data, 0)
 
     if total_global == 0:
         return {}
@@ -153,7 +167,12 @@ def continent_contribution(data: List[Dict]) -> Dict[str, float]:
     sorted_data = sorted(data, key=itemgetter("continent"))
     grouped = groupby(sorted_data, key=itemgetter("continent"))
 
-    return {
-        continent: (sum(map(itemgetter("gdp"), group)) / total_global) * 100
-        for continent, group in grouped
-    }
+    return dict(
+        map(
+            lambda item: (
+                item[0],
+                (reduce(lambda acc, d: acc + d["gdp"], item[1], 0) / total_global) * 100
+            ),
+            grouped
+        )
+    )
