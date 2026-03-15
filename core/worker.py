@@ -1,16 +1,16 @@
 from .verifier import verify_signature
 
 
-def worker_process(raw_queue, verified_queue, config):
+def worker_process(raw_q, verified_q, config):
 
     while True:
 
-        packet = raw_queue.get()
+        packet = raw_q.get()
 
         if packet == "STOP":
-            verified_queue.put("STOP")
+            verified_q.put("STOP")
             break
 
         if verify_signature(packet, config):
 
-            verified_queue.put(packet)
+            verified_q.put(packet)
