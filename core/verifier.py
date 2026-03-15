@@ -18,6 +18,10 @@ def verify_signature(packet, config):
     secret = config["processing"]["stateless_tasks"]["secret_key"]
     iterations = config["processing"]["stateless_tasks"]["iterations"]
 
-    expected_hash = compute_hash(packet["metric_value"], secret, iterations)
+    expected = compute_hash(
+        packet["metric_value"],
+        secret,
+        iterations
+    )
 
-    return expected_hash == packet["security_hash"]
+    return expected == packet["security_hash"]

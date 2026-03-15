@@ -1,7 +1,9 @@
 import json
 import multiprocessing
+
 from core.worker import worker_process
 from core.aggregator import aggregator_process
+
 from input.input_reader import input_process
 from output.dashboard import dashboard_process
 from telemetry.telemetry_monitor import telemetry_monitor
@@ -13,17 +15,20 @@ def load_config():
         return json.load(f)
 
 
-def create_workers(n, raw_q, ver_q, config):
+def create_workers(n, raw_q, verified_q, config):
 
-    return list(
-        map(
-            lambda _: multiprocessing.Process(
-                target=worker_process,
-                args=(raw_q, ver_q, config)
-            ),
-            range(n)
+    workers = []
+
+    for _ in range(n):
+
+        p = multiprocessing.Process(
+            target=worker_process,
+            args=(raw_q, verified_q, config)
         )
-    )
+
+        workers.append(p)
+
+    return workers
 
 
 def main():
@@ -33,13 +38,15 @@ def main():
     size = config["pipeline_dynamics"]["stream_queue_max_size"]
 
     raw_q = multiprocessing.Queue(maxsize=size)
-    ver_q = multiprocessing.Queue(maxsize=size)
-    proc_q = multiprocessing.Queue(maxsize=size)
+    verified_q = multiprocessing.Queue(maxsize=size)
+    processed_q = multiprocessing.Queue(maxsize=size)
+
+    telemetry_q = multiprocessing.Queue()
 
     workers = create_workers(
         config["pipeline_dynamics"]["core_parallelism"],
         raw_q,
-        ver_q,
+        verified_q,
         config
     )
 
@@ -50,22 +57,23 @@ def main():
 
     aggregator = multiprocessing.Process(
         target=aggregator_process,
-        args=(ver_q, proc_q, config)
+        args=(verified_q, processed_q, config)
     )
 
     dashboard = multiprocessing.Process(
         target=dashboard_process,
-        args=(proc_q,)
+        args=(processed_q, telemetry_q)
     )
 
     telemetry = multiprocessing.Process(
         target=telemetry_monitor,
-        args=(raw_q, ver_q, proc_q, config)
+        args=(raw_q, verified_q, processed_q, telemetry_q, config)
     )
 
     processes = [input_p, aggregator, dashboard, telemetry] + workers
 
-    list(map(lambda p: p.start(), processes))
+    for p in processes:
+        p.start()
 
     input_p.join()
 

@@ -18,7 +18,7 @@ def update_window(window, value, size):
     return new_window[-size:]
 
 
-def aggregator_process(verified_queue, processed_queue, config):
+def aggregator_process(verified_q, processed_q, config):
 
     size = config["processing"]["stateful_tasks"]["running_average_window_size"]
 
@@ -26,10 +26,10 @@ def aggregator_process(verified_queue, processed_queue, config):
 
     while True:
 
-        packet = verified_queue.get()
+        packet = verified_q.get()
 
         if packet == "STOP":
-            processed_queue.put("STOP")
+            processed_q.put("STOP")
             break
 
         value = packet["metric_value"]
@@ -40,4 +40,4 @@ def aggregator_process(verified_queue, processed_queue, config):
 
         packet["computed_metric"] = avg
 
-        processed_queue.put(packet)
+        processed_q.put(packet)
