@@ -1,17 +1,26 @@
-def compute_running_average(values):
-    """
-    Functional core (pure function)
-    """
+from functools import reduce
 
-    if len(values) == 0:
+
+def compute_average(values):
+
+    if not values:
         return 0
 
-    return sum(values) / len(values)
+    total = reduce(lambda a, b: a + b, values)
+
+    return total / len(values)
+
+
+def update_window(window, value, size):
+
+    new_window = window + [value]
+
+    return new_window[-size:]
 
 
 def aggregator_process(verified_queue, processed_queue, config):
 
-    window_size = config["processing"]["stateful_tasks"]["running_average_window_size"]
+    size = config["processing"]["stateful_tasks"]["running_average_window_size"]
 
     window = []
 
@@ -20,16 +29,14 @@ def aggregator_process(verified_queue, processed_queue, config):
         packet = verified_queue.get()
 
         if packet == "STOP":
+            processed_queue.put("STOP")
             break
 
         value = packet["metric_value"]
 
-        window.append(value)
+        window = update_window(window, value, size)
 
-        if len(window) > window_size:
-            window.pop(0)
-
-        avg = compute_running_average(window)
+        avg = compute_average(window)
 
         packet["computed_metric"] = avg
 
