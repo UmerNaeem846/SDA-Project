@@ -1,8 +1,10 @@
 import json
 import multiprocessing
-
 from core.worker import worker_process
 from core.aggregator import aggregator_process
+from input.input_reader import input_process
+from output.dashboard import dashboard_process
+from telemetry.telemetry_monitor import telemetry_monitor
 
 
 def load_config():
@@ -11,61 +13,61 @@ def load_config():
         return json.load(f)
 
 
-def create_workers(raw_queue, verified_queue, config):
+def create_workers(n, raw_q, ver_q, config):
 
-    workers = []
-
-    num_workers = config["pipeline_dynamics"]["core_parallelism"]
-
-    for _ in range(num_workers):
-
-        p = multiprocessing.Process(
-            target=worker_process,
-            args=(raw_queue, verified_queue, config)
+    return list(
+        map(
+            lambda _: multiprocessing.Process(
+                target=worker_process,
+                args=(raw_q, ver_q, config)
+            ),
+            range(n)
         )
-
-        p.start()
-        workers.append(p)
-
-    return workers
-
-
-def create_aggregator(verified_queue, processed_queue, config):
-
-    p = multiprocessing.Process(
-        target=aggregator_process,
-        args=(verified_queue, processed_queue, config)
     )
-
-    p.start()
-
-    return p
 
 
 def main():
 
     config = load_config()
 
-    queue_size = config["pipeline_dynamics"]["stream_queue_max_size"]
+    size = config["pipeline_dynamics"]["stream_queue_max_size"]
 
-    raw_queue = multiprocessing.Queue(maxsize=queue_size)
-    verified_queue = multiprocessing.Queue(maxsize=queue_size)
-    processed_queue = multiprocessing.Queue(maxsize=queue_size)
+    raw_q = multiprocessing.Queue(maxsize=size)
+    ver_q = multiprocessing.Queue(maxsize=size)
+    proc_q = multiprocessing.Queue(maxsize=size)
 
-    workers = create_workers(raw_queue, verified_queue, config)
-
-    aggregator = create_aggregator(
-        verified_queue,
-        processed_queue,
+    workers = create_workers(
+        config["pipeline_dynamics"]["core_parallelism"],
+        raw_q,
+        ver_q,
         config
     )
 
-    print("Core pipeline started.")
-    print("Workers running:", len(workers))
+    input_p = multiprocessing.Process(
+        target=input_process,
+        args=(raw_q, config)
+    )
 
-    # Placeholder until Input Module pushes data
-    while True:
-        pass
+    aggregator = multiprocessing.Process(
+        target=aggregator_process,
+        args=(ver_q, proc_q, config)
+    )
+
+    dashboard = multiprocessing.Process(
+        target=dashboard_process,
+        args=(proc_q,)
+    )
+
+    telemetry = multiprocessing.Process(
+        target=telemetry_monitor,
+        args=(raw_q, ver_q, proc_q, config)
+    )
+
+    processes = [input_p, aggregator, dashboard, telemetry] + workers
+
+    list(map(lambda p: p.start(), processes))
+
+    input_p.join()
 
 
 if __name__ == "__main__":
