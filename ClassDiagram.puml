@@ -1,0 +1,60 @@
+@startuml
+
+skinparam classAttributeIconSize 0
+allowmixing
+
+class Main {
+    +load_config()
+    +create_workers()
+    +main()
+}
+
+class InputReader {
+    +input_process()
+}
+
+class SchemaMapper {
+    +map_row_to_packet()
+    +cast_value()
+}
+
+class Worker {
+    +worker_process()
+}
+
+class Verifier {
+    +verify_signature()
+    +compute_hash()
+}
+
+class Aggregator {
+    +aggregator_process()
+    +compute_average()
+    +update_window()
+}
+
+class Dashboard {
+    +dashboard_process()
+    +get_color()
+}
+
+class TelemetryMonitor {
+    +telemetry_monitor()
+}
+
+
+' Relationships
+Main --> InputReader
+Main --> Worker
+Main --> Aggregator
+Main --> Dashboard
+Main --> TelemetryMonitor
+
+InputReader --> SchemaMapper
+Worker --> Verifier
+Aggregator --> Dashboard
+TelemetryMonitor --> Dashboard
+
+
+
+@enduml

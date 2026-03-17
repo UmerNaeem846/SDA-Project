@@ -1,0 +1,41 @@
+@startuml
+
+actor Dataset
+
+participant InputReader
+participant RawQueue
+participant Worker
+participant VerifiedQueue
+participant Aggregator
+participant ProcessedQueue
+participant Dashboard
+participant TelemetryMonitor
+participant TelemetryQueue
+
+Dataset -> InputReader : read CSV row
+InputReader -> RawQueue : put(packet)
+
+Worker -> RawQueue : get(packet)
+Worker -> Worker : verify_signature()
+
+alt Valid Packet
+    Worker -> VerifiedQueue : put(packet)
+end
+
+Aggregator -> VerifiedQueue : get(packet)
+Aggregator -> Aggregator : compute_running_average()
+
+Aggregator -> ProcessedQueue : put(packet)
+
+Dashboard -> ProcessedQueue : get(packet)
+Dashboard -> Dashboard : update graphs
+
+TelemetryMonitor -> RawQueue : qsize()
+TelemetryMonitor -> VerifiedQueue : qsize()
+TelemetryMonitor -> ProcessedQueue : qsize()
+
+TelemetryMonitor -> TelemetryQueue : publish telemetry
+Dashboard -> TelemetryQueue : read telemetry
+Dashboard -> Dashboard : update telemetry bars
+
+@enduml
