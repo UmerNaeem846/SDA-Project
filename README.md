@@ -228,7 +228,7 @@ python main.py
 ---
 
 # Project Structure
-
+```
 SDA-Project/
 │
 ├── data/
@@ -257,7 +257,7 @@ SDA-Project/
 ├── main.py
 │
 └── README.md
-
+```
 
 ---
 
